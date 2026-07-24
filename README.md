@@ -1,2 +1,1 @@
-# order-processing-system
-Enterprise-grade event-driven order processing application built with Spring Boot microservices, Spring Security JWT, Apache Kafka, and React.
+Decoupled full-stack microservice platform featuring stateless JWT authentication, asynchronous payment processing via messaging events, resilient inter-service communication, and a modern React dashboard. Built as an end-to-end portfolio project showcasing production-grade Java enterprise patterns.
