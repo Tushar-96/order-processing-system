@@ -1,20 +1,45 @@
-# Java & Spring Boot
-target/
-*.class
-*.jar
-*.war
-.mvn/
+# Environment variables and secrets
+.env
+.env.
+!.env.example
+
+# Java and Maven
+target
+.class
+.jar
+.war
+.log
+
+# Node and frontend
+node_modules
+dist
+.vite
+npm-debug.log
+
+# IntelliJ IDEA
+.idea
+.iml
+out
+
+# VS Code
+.vscode
+
+# Eclipse
 .classpath
 .project
-.settings/
-*.idea
-*.iml
+.settings
 
-# Node / React
-frontend/node_modules/
-frontend/dist/
-frontend/.env.local
-
-# Operating System
+# Operating systems
 .DS_Store
 Thumbs.db
+
+# Test and coverage output
+coverage
+.exec
+
+# Local application configuration
+application-local.yml
+application-local.properties
+
+# Docker runtime data
+docker-data
