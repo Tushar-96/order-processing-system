@@ -7,6 +7,7 @@ import java.util.function.Function;
 import javax.crypto.SecretKey;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import com.ecommerce.auth.model.User;
@@ -59,10 +60,10 @@ public class JwtService {
         return extractAllClaims(token).get("role", String.class);
     }
 
-    public boolean isTokenValid(String token, User user) {
+    public boolean isTokenValid(String token, UserDetails user) {
         String email = extractEmail(token);
 
-        return email.equalsIgnoreCase(user.getEmail())
+        return email.equalsIgnoreCase(user.getUsername())
                 && !isTokenExpired(token);
     }
 
