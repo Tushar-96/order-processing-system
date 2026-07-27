@@ -1,3 +1,6 @@
+Doc: https://docs.google.com/document/d/1cIrBhcv7OQm2MTp2BKLZyAGoSzin3HiEdh44rzPPtcA/edit?tab=t.0
+
+
 Decoupled full-stack microservice platform featuring stateless JWT authentication, asynchronous payment processing via messaging events, resilient inter-service communication, and a modern React dashboard. Built as an end-to-end portfolio project showcasing production-grade Java enterprise patterns.
 
 
