@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: orderservice
+
+  datasource:
+    url: jdbc:postgresql://localhost:5434/order_db
+    username: postgres
+    password: order_password
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+    show-sql: true
+
+    properties:
+      hibernate:
+        format_sql: true
+
+    open-in-view: false
+
+  kafka:
+    bootstrap-servers: localhost:9092
+
+server:
+  port: 8081
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
