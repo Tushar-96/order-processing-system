@@ -1,4 +1,4 @@
-package com.ecommerce.auth_service;
+package com.ecommerce.auth;
 
 import java.util.TimeZone;
 
