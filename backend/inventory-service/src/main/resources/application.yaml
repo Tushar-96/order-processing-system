@@ -1,0 +1,34 @@
+spring:
+  application:
+    name: inventory-service
+
+  docker:
+    compose:
+      enabled: false
+
+  datasource:
+    url: ${INVENTORY_DB_URL:jdbc:postgresql://localhost:5435/inventory_db}
+    username: ${INVENTORY_DB_USERNAME:postgres}
+    password: ${INVENTORY_DB_PASSWORD:inventory_password}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+server:
+  port: 8083
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
