@@ -27,6 +27,11 @@ spring:
 server:
   port: 8083
 
+application:
+  seed:
+    products-enabled: ${SEED_PRODUCTS_ENABLED:true}
+  # SEED_PRODUCTS_ENABLED=false
+
 management:
   endpoints:
     web:
