@@ -45,9 +45,20 @@ public class InventoryReservation {
     @Column(
             name = "source_event_id",
             nullable = false,
-            unique = true
+            unique = true,
+            updatable = false
+
     )
     private UUID sourceEventId;
+
+    @Column(
+        name = "result_event_id",
+        nullable = false,
+        unique = true,
+        updatable = false
+    )
+    private UUID resultEventId;
+    
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)

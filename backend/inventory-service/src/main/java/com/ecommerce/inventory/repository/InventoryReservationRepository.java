@@ -15,6 +15,9 @@ public interface InventoryReservationRepository
     Optional<InventoryReservation> findBySourceEventId(
             UUID sourceEventId
     );
+    Optional<InventoryReservation> findByResultEventId(
+        UUID resultEventId
+);
 
     boolean existsByOrderId(Long orderId);
 
