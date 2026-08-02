@@ -1,0 +1,23 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+
+  kafka:
+    listener:
+      auto-startup: false
+
+application:
+  seed:
+    products-enabled: false
+
+logging:
+  level:
+    org.testcontainers: INFO
+    com.ecommerce.inventory: DEBUG
