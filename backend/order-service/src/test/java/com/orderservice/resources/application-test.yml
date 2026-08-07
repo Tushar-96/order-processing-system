@@ -1,0 +1,27 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  kafka:
+    listener:
+      auto-startup: false
+    admin:
+      fail-fast: false
+
+application:
+  kafka:
+    topics:
+      order-created: order.created.test
+      inventory-result: inventory.result.test
+      inventory-result-dlt: inventory.result.test.dlt
+
+logging:
+  level:
+    org.testcontainers: INFO
+    com.orderservice: DEBUG
