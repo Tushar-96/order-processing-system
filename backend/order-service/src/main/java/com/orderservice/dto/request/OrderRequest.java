@@ -17,9 +17,8 @@ import lombok.Setter;
 @AllArgsConstructor
 public class OrderRequest {
 
-    @NotNull(message = "customerId is required")
-    private Long customerId;
-
+    // @NotNull(message = "customerId is required")
+    // private Long customerId;
     @NotNull(message = "totalAmount is required")
     @Positive(message = "totalAmount must be greater than 0")
     private BigDecimal totalAmount;
