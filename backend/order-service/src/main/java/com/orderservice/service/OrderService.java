@@ -3,18 +3,17 @@ package com.orderservice.service;
 import java.util.List;
 
 import com.orderservice.dto.request.OrderRequest;
-import com.orderservice.dto.request.OrderUpdateRequest;
 import com.orderservice.dto.response.OrderResponse;
 
 public interface OrderService {
 
-    OrderResponse createOrder(OrderRequest request);
+    OrderResponse createOrder(Long userId, OrderRequest request);
 
-    OrderResponse updateOrder(Long id, OrderUpdateRequest request);
+    List<OrderResponse> getOrdersByUserId(Long userId);
 
-    OrderResponse deleteOrder(Long id);
+    OrderResponse getOrderById(Long userId, Long orderId);
 
-    OrderResponse getOrderById(Long id);
+    OrderResponse cancelOrder(Long userId, Long orderId);
 
     List<OrderResponse> getAllOrders();
 }

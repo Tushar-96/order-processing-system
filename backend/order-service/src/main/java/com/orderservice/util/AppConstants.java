@@ -5,5 +5,5 @@ public final class AppConstants {
     private AppConstants() {
     }
 
-    public static final String ORDERS_API = "/api/orders";
+    public static final String ORDERS_API = "/api/v1/orders";
 }

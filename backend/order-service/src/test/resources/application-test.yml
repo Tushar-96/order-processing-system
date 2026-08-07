@@ -15,6 +15,10 @@ spring:
       fail-fast: false
 
 application:
+  security:
+    jwt:
+      secret-key: MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE=
+
   kafka:
     topics:
       order-created: order.created.test
