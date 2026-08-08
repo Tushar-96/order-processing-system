@@ -1,15 +1,16 @@
-export function getApiErrorMessage(error) {
-  if (error.response?.data?.message) {
-    return error.response.data.message;
-  }
-
-  if (error.code === "ECONNABORTED") {
-    return "The request timed out. Please try again.";
-  }
+export function getApiError(error) {
+  const responseData = error.response?.data;
 
   if (!error.response) {
-    return "Unable to connect to the server.";
+    return {
+      message:
+        "Unable to reach the server. Check that the API Gateway is running.",
+      fieldErrors: {},
+    };
   }
 
-  return "An unexpected error occurred.";
+  return {
+    message: responseData?.message || "Something went wrong",
+    fieldErrors: responseData?.errors || {},
+  };
 }
