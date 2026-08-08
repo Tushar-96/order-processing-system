@@ -38,7 +38,7 @@ public class OrderController {
         );
     }
 
-    @PostMapping
+    @PostMapping()
     public ResponseEntity<OrderResponse> createOrder(
             @AuthenticationPrincipal AuthenticatedUser user,
             @Valid @RequestBody OrderRequest request) {

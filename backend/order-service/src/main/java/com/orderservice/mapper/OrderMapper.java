@@ -12,7 +12,7 @@ public final class OrderMapper {
 
     public static Order toEntity(OrderRequest request) {
         return Order.builder()
-                // .customerId(request.getCustomerId())
+                // .customerId(request.getCustomerId()) 
                 .totalAmount(request.getTotalAmount())
                 .status(OrderStatus.PENDING)
                 .build();
