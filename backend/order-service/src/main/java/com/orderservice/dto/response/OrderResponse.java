@@ -22,6 +22,8 @@ public class OrderResponse {
     private Long customerId;
     private BigDecimal totalAmount;
     private OrderStatus status;
+    private String inventoryRejectionReason;
+    private String inventoryMessage;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

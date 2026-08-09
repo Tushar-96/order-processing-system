@@ -35,12 +35,18 @@ public class Order {
     @Column(name = "customer_id", nullable = false)
     private Long customerId;
 
-    @Column(name = "total_amount", nullable = false, precision = 19, scale = 2)
+    @Column(name = "total_amount", precision = 19, scale = 2)
     private BigDecimal totalAmount;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private OrderStatus status;
+
+    @Column(name = "inventory_rejection_reason", length = 50)
+    private String inventoryRejectionReason;
+
+    @Column(name = "inventory_message", length = 500)
+    private String inventoryMessage;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
