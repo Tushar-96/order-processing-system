@@ -1,9 +1,9 @@
 package com.orderservice.dto.request;
 
-import java.math.BigDecimal;
+import java.util.List;
 
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -17,9 +17,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class OrderRequest {
 
-    // @NotNull(message = "customerId is required")
-    // private Long customerId;
-    @NotNull(message = "totalAmount is required")
-    @Positive(message = "totalAmount must be greater than 0")
-    private BigDecimal totalAmount;
+    @NotEmpty(message = "At least one order item is required")
+    @Valid
+    private List<OrderItemRequest> items;
 }

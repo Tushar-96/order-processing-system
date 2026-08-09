@@ -20,7 +20,27 @@ spring:
     open-in-view: false
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+    producer:
+        key-serializer: org.apache.kafka.common.serialization.StringSerializer
+        value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+        properties:
+           spring.json.add.type.headers: false
+
+    consumer:
+        group-id: order-service
+        auto-offset-reset: earliest
+        enable-auto-commit: false
+        key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+        value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+        properties:
+          spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+          spring.json.value.default.type: com.orderservice.event.InventoryResultEvent
+          spring.json.trusted.packages: com.orderservice.event
+          spring.json.use.type.headers: false
+    listener:
+      ack-mode: record
 
 server:
   port: 8082
@@ -35,3 +55,8 @@ application:
   security:
     jwt:
       secret-key: ${JWT_SECRET}
+  
+  kafka:
+    topics:
+      order-created: order.created.v1
+      inventory-result: inventory.result.v1
