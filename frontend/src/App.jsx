@@ -1,9 +1,6 @@
-import { Navigate, Route, Routes } from "react-router-dom";
-
+import LoadingSpinner from "./components/LoadingSpinner";
 import { useAuth } from "./context/AuthContext";
-import HomePage from "./pages/HomePage";
-import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
+import AppRoutes from "./routes/AppRoutes";
 import "./App.css";
 
 function App() {
@@ -11,20 +8,11 @@ function App() {
 
   if (isLoading) {
     return (
-      <main className="app-shell">
-        <p>Restoring session...</p>
-      </main>
+      <LoadingSpinner message="Restoring session..." />
     );
   }
 
-  return (
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  );
+  return <AppRoutes />;
 }
 
 export default App;
