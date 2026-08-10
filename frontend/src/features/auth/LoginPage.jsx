@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 
-import { useAuth } from "../context/AuthContext";
-import { getApiError } from "../utils/apiError";
+import { useAuth } from "../../context/AuthContext";
+import { getApiError } from "../../utils/apiError";
 import "./auth.css";
 
 function LoginPage() {

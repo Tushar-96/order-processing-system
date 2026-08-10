@@ -1,0 +1,140 @@
+.orders-page {
+  width: min(900px, calc(100% - 2rem));
+  margin-inline: auto;
+  padding-block: 2rem;
+}
+
+.orders-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.orders-header h1 {
+  margin-bottom: 0.25rem;
+}
+
+.orders-header p {
+  margin: 0;
+  color: #667085;
+}
+
+.orders-header button {
+  padding: 0.6rem 1rem;
+  border: 1px solid #2563eb;
+  border-radius: 6px;
+  color: #2563eb;
+  background: white;
+  cursor: pointer;
+}
+
+.orders-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.order-card {
+  padding: 1.25rem;
+  border: 1px solid #e4e7ec;
+  border-radius: 10px;
+  background: white;
+  box-shadow: 0 2px 8px rgb(16 24 40 / 5%);
+}
+
+.order-card__header,
+.order-details {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.order-card h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.1rem;
+}
+
+.order-card time {
+  color: #667085;
+  font-size: 0.9rem;
+}
+
+.order-details {
+  margin-block: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e4e7ec;
+}
+
+.order-status {
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  color: #344054;
+  background: #f2f4f7;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.order-status--confirmed,
+.order-status--delivered {
+  color: #067647;
+  background: #ecfdf3;
+}
+
+.order-status--pending {
+  color: #b54708;
+  background: #fffaeb;
+}
+
+.order-status--inventory_rejected,
+.order-status--cancelled {
+  color: #b42318;
+  background: #fef3f2;
+}
+
+.order-status--shipped {
+  color: #175cd3;
+  background: #eff8ff;
+}
+
+.inventory-message {
+  color: #b42318;
+}
+
+.cancel-order-button {
+  padding: 0.55rem 0.8rem;
+  border: 1px solid #d92d20;
+  border-radius: 6px;
+  color: #b42318;
+  background: white;
+  cursor: pointer;
+}
+
+.cancel-order-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.orders-error {
+  margin-bottom: 1rem;
+  padding: 0.8rem;
+  border-radius: 6px;
+  color: #912018;
+  background: #fef3f2;
+}
+
+.empty-orders {
+  padding: 3rem 1rem;
+  border-radius: 10px;
+  text-align: center;
+  background: #f9fafb;
+}
+
+@media (max-width: 600px) {
+  .orders-header,
+  .order-card__header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
