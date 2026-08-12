@@ -1,5 +1,8 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
+import { getApiError } from "../../utils/apiError";
+import { createOrder } from "../orders/orderService";
 import CartItem from "./CartItem";
 import { useCart } from "./CartContext";
 import "./CartPage.css";
@@ -10,6 +13,8 @@ const priceFormatter = new Intl.NumberFormat("en-IN", {
 });
 
 function CartPage() {
+  const navigate = useNavigate();
+
   const {
     cartItems,
     itemCount,
@@ -18,6 +23,9 @@ function CartPage() {
     removeFromCart,
     clearCart,
   } = useCart();
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   function handleClearCart() {
     const confirmed = window.confirm(
@@ -29,9 +37,32 @@ function CartPage() {
     }
   }
 
-  function handlePlaceOrder() {
-    // We will connect this to POST /api/v1/orders
-    // in the next step.
+  async function handlePlaceOrder() {
+    if (cartItems.length === 0 || isSubmitting) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMessage("");
+
+    try {
+      const createdOrder = await createOrder(cartItems);
+
+      clearCart();
+
+      navigate("/orders", {
+        replace: true,
+        state: {
+          createdOrderId: createdOrder.id,
+          message: `Order #${createdOrder.id} was submitted successfully.`,
+        },
+      });
+    } catch (error) {
+      const apiError = getApiError(error);
+      setErrorMessage(apiError.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   if (cartItems.length === 0) {
@@ -41,13 +72,10 @@ function CartPage() {
           <h1>Your cart is empty</h1>
 
           <p>
-            Add products to your cart before placing an
-            order.
+            Add products to your cart before placing an order.
           </p>
 
-          <Link to="/products">
-            Browse products
-          </Link>
+          <Link to="/products">Browse products</Link>
         </section>
       </main>
     );
@@ -60,8 +88,7 @@ function CartPage() {
           <h1>Shopping Cart</h1>
 
           <p>
-            {itemCount}{" "}
-            {itemCount === 1 ? "item" : "items"}
+            {itemCount} {itemCount === 1 ? "item" : "items"}
           </p>
         </div>
 
@@ -69,10 +96,18 @@ function CartPage() {
           type="button"
           className="clear-button"
           onClick={handleClearCart}
+          disabled={isSubmitting}
         >
           Clear cart
         </button>
       </header>
+
+      {errorMessage && (
+        <div className="checkout-error" role="alert">
+          <strong>Order could not be submitted.</strong>
+          <p>{errorMessage}</p>
+        </div>
+      )}
 
       <section className="cart-content">
         <div
@@ -85,6 +120,7 @@ function CartPage() {
               item={item}
               onUpdateQuantity={updateQuantity}
               onRemove={removeFromCart}
+              disabled={isSubmitting}
             />
           ))}
         </div>
@@ -103,7 +139,7 @@ function CartPage() {
           </div>
 
           <div className="summary-row summary-total">
-            <span>Total</span>
+            <span>Estimated total</span>
 
             <strong>
               {priceFormatter.format(cartTotal)}
@@ -114,13 +150,16 @@ function CartPage() {
             type="button"
             className="checkout-button"
             onClick={handlePlaceOrder}
+            disabled={isSubmitting}
           >
-            Place order
+            {isSubmitting
+              ? "Submitting order..."
+              : "Place order"}
           </button>
 
           <p className="summary-note">
-            Stock and prices will be verified when the order
-            is submitted.
+            The Inventory Service will verify current prices
+            and stock after submission.
           </p>
         </aside>
       </section>

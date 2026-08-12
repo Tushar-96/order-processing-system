@@ -38,4 +38,14 @@ public class KafkaTopicConfig {
                 .replicas(1)
                 .build();
     }
+
+    @Bean
+    NewTopic orderCancelledTopic(
+            @Value("${application.kafka.topics.order-cancelled}") String topicName) {
+
+        return TopicBuilder.name(topicName)
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
 }

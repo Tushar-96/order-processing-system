@@ -131,6 +131,27 @@
   background: #f9fafb;
 }
 
+.orders-success {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid #abefc6;
+  border-radius: 6px;
+  color: #067647;
+  background: #ecfdf3;
+}
+
+.orders-success button {
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
 @media (max-width: 600px) {
   .orders-header,
   .order-card__header {

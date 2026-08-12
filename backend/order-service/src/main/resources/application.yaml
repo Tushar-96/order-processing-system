@@ -60,3 +60,4 @@ application:
     topics:
       order-created: order.created.v1
       inventory-result: inventory.result.v1
+      order-cancelled: order.cancelled.v1
