@@ -102,6 +102,28 @@
   text-decoration: none;
 }
 
+
+.checkout-error {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border: 1px solid #fda29b;
+  border-radius: 8px;
+  color: #912018;
+  background: #fef3f2;
+}
+
+.checkout-error p {
+  margin: 0.35rem 0 0;
+}
+
+.clear-button:disabled,
+.remove-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+
+
 @media (max-width: 800px) {
   .cart-content {
     grid-template-columns: 1fr;

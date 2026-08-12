@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ecommerce.inventory.event.InventoryRejectionReason;
 import com.ecommerce.inventory.event.InventoryResultEvent;
 import com.ecommerce.inventory.event.InventoryResultStatus;
+import com.ecommerce.inventory.event.OrderCancelledEvent;
 import com.ecommerce.inventory.event.OrderCreatedEvent;
 import com.ecommerce.inventory.event.OrderItemRequested;
 import com.ecommerce.inventory.event.ReservedInventoryItem;
@@ -32,8 +33,15 @@ import com.ecommerce.inventory.repository.ProductRepository;
 @Service
 public class InventoryReservationService {
 
-    private static final String ORDER_CREATED_TYPE = "OrderCreated";
-    private static final String INVENTORY_RESULT_TYPE = "InventoryResult";
+    private static final String ORDER_CREATED_TYPE
+            = "OrderCreated";
+
+    private static final String ORDER_CANCELLED_TYPE
+            = "OrderCancelled";
+
+    private static final String INVENTORY_RESULT_TYPE
+            = "InventoryResult";
+
     private static final int SUPPORTED_EVENT_VERSION = 1;
 
     private final ProductRepository productRepository;
@@ -47,15 +55,20 @@ public class InventoryReservationService {
 
         this.productRepository = productRepository;
         this.reservationRepository = reservationRepository;
-        this.processedEventRepository = processedEventRepository;
+        this.processedEventRepository
+                = processedEventRepository;
     }
 
     @Transactional
-    public InventoryResultEvent process(OrderCreatedEvent event) {
+    public InventoryResultEvent process(
+            OrderCreatedEvent event) {
+
         validateEnvelope(event);
 
-        Optional<ProcessedEvent> processedEvent =
-                processedEventRepository.findById(event.eventId());
+        Optional<ProcessedEvent> processedEvent
+                = processedEventRepository.findById(
+                        event.eventId()
+                );
 
         if (processedEvent.isPresent()) {
             return loadExistingResult(
@@ -63,16 +76,21 @@ public class InventoryReservationService {
             );
         }
 
-        Optional<InventoryReservation> existingReservation =
-                reservationRepository.findByOrderId(event.orderId());
+        Optional<InventoryReservation> existingReservation
+                = reservationRepository.findByOrderId(
+                        event.orderId()
+                );
 
         if (existingReservation.isPresent()) {
             markProcessed(event);
-            return toResultEvent(existingReservation.get());
+
+            return toResultEvent(
+                    existingReservation.get()
+            );
         }
 
-        Optional<String> itemValidationError =
-                validateItems(event.items());
+        Optional<String> itemValidationError
+                = validateItems(event.items());
 
         if (itemValidationError.isPresent()) {
             return reject(
@@ -82,19 +100,24 @@ public class InventoryReservationService {
             );
         }
 
-        List<OrderItemRequested> sortedItems = event.items()
-                .stream()
-                .sorted(Comparator.comparing(
-                        OrderItemRequested::productId
-                ))
-                .toList();
+        List<OrderItemRequested> sortedItems
+                = event.items()
+                        .stream()
+                        .sorted(
+                                Comparator.comparing(
+                                        OrderItemRequested::productId
+                                )
+                        )
+                        .toList();
 
-        List<LockedProductRequest> lockedRequests =
-                new ArrayList<>();
+        List<LockedProductRequest> lockedRequests
+                = new ArrayList<>();
 
-        for (OrderItemRequested requestedItem : sortedItems) {
-            Optional<Product> product =
-                    productRepository.findByIdForUpdate(
+        for (OrderItemRequested requestedItem
+                : sortedItems) {
+
+            Optional<Product> product
+                    = productRepository.findByIdForUpdate(
                             requestedItem.productId()
                     );
 
@@ -102,8 +125,9 @@ public class InventoryReservationService {
                 return reject(
                         event,
                         InventoryRejectionReason.PRODUCT_NOT_FOUND,
-                        "Product " + requestedItem.productId()
-                                + " was not found"
+                        "Product "
+                        + requestedItem.productId()
+                        + " was not found"
                 );
             }
 
@@ -115,15 +139,19 @@ public class InventoryReservationService {
             );
         }
 
-        for (LockedProductRequest request : lockedRequests) {
+        for (LockedProductRequest request
+                : lockedRequests) {
+
             Product product = request.product();
 
-            if (product.getAvailableQuantity() < request.quantity()) {
+            if (product.getAvailableQuantity()
+                    < request.quantity()) {
+
                 return reject(
                         event,
                         InventoryRejectionReason.INSUFFICIENT_STOCK,
                         "Insufficient stock for product "
-                                + product.getId()
+                        + product.getId()
                 );
             }
         }
@@ -131,37 +159,143 @@ public class InventoryReservationService {
         return reserve(event, lockedRequests);
     }
 
+    @Transactional
+    public void release(OrderCancelledEvent event) {
+        validateCancellationEvent(event);
+
+        Optional<ProcessedEvent> processedEvent
+                = processedEventRepository.findById(
+                        event.eventId()
+                );
+
+        if (processedEvent.isPresent()) {
+            return;
+        }
+
+        /*
+         * Fetch the reservation and its items together.
+         * These items contain the product IDs and quantities
+         * that must be returned to inventory.
+         */
+        InventoryReservation reservation
+                = reservationRepository
+                        .findByOrderIdWithItems(
+                                event.orderId()
+                        )
+                        .orElseThrow(()
+                                -> new IllegalStateException(
+                                "Inventory reservation "
+                                + "not found for order "
+                                + event.orderId()
+                        )
+                        );
+
+        if (reservation.getStatus()
+                == ReservationStatus.RELEASED) {
+            markCancellationProcessed(event);
+            return;
+        }
+
+        if (reservation.getStatus()
+                == ReservationStatus.REJECTED) {
+
+            markCancellationProcessed(event);
+            return;
+        }
+
+        if (reservation.getStatus()
+                != ReservationStatus.RESERVED) {
+
+            throw new IllegalStateException(
+                    "Cannot release inventory reservation "
+                    + "with status "
+                    + reservation.getStatus()
+            );
+        }
+
+        if (reservation.getItems().isEmpty()) {
+            throw new IllegalStateException(
+                    "Reserved inventory contains no items "
+                    + "for order " + event.orderId()
+            );
+        }
+
+        for (InventoryReservationItem item
+                : reservation.getItems()) {
+
+            Product product
+                    = productRepository.findByIdForUpdate(
+                            item.getProductId()
+                    ).orElseThrow(()
+                            -> new IllegalStateException(
+                                    "Product not found while "
+                                    + "releasing inventory: "
+                                    + item.getProductId()
+                            )
+                    );
+
+            product.setAvailableQuantity(
+                    product.getAvailableQuantity()
+                    + item.getQuantity()
+            );
+
+            /*
+             * This save is explicit for clarity.
+             * Hibernate dirty checking would also persist it.
+             */
+            productRepository.save(product);
+        }
+
+        reservation.setStatus(
+                ReservationStatus.RELEASED
+        );
+
+        reservation.setMessage(
+                "Inventory released after order cancellation"
+        );
+
+        reservationRepository.save(reservation);
+        markCancellationProcessed(event);
+    }
+
     private InventoryResultEvent reserve(
             OrderCreatedEvent event,
             List<LockedProductRequest> lockedRequests) {
 
-        InventoryReservation reservation =
-                InventoryReservation.builder()
+        InventoryReservation reservation
+                = InventoryReservation.builder()
                         .orderId(event.orderId())
                         .sourceEventId(event.eventId())
                         .resultEventId(UUID.randomUUID())
                         .status(ReservationStatus.RESERVED)
-                        .message("Inventory reserved successfully")
+                        .message(
+                                "Inventory reserved successfully"
+                        )
                         .totalAmount(BigDecimal.ZERO)
                         .build();
 
         BigDecimal totalAmount = BigDecimal.ZERO;
 
-        for (LockedProductRequest request : lockedRequests) {
+        for (LockedProductRequest request
+                : lockedRequests) {
+
             Product product = request.product();
             int quantity = request.quantity();
 
             product.setAvailableQuantity(
-                    product.getAvailableQuantity() - quantity
+                    product.getAvailableQuantity()
+                    - quantity
             );
 
-            BigDecimal itemTotal = product.getPrice()
-                    .multiply(BigDecimal.valueOf(quantity));
+            BigDecimal itemTotal
+                    = product.getPrice().multiply(
+                            BigDecimal.valueOf(quantity)
+                    );
 
             totalAmount = totalAmount.add(itemTotal);
 
-            InventoryReservationItem reservationItem =
-                    InventoryReservationItem.builder()
+            InventoryReservationItem reservationItem
+                    = InventoryReservationItem.builder()
                             .productId(product.getId())
                             .productName(product.getName())
                             .quantity(quantity)
@@ -173,8 +307,8 @@ public class InventoryReservationService {
 
         reservation.setTotalAmount(totalAmount);
 
-        InventoryReservation savedReservation =
-                reservationRepository.save(reservation);
+        InventoryReservation savedReservation
+                = reservationRepository.save(reservation);
 
         markProcessed(event);
 
@@ -186,8 +320,8 @@ public class InventoryReservationService {
             InventoryRejectionReason reason,
             String message) {
 
-        InventoryReservation reservation =
-                InventoryReservation.builder()
+        InventoryReservation reservation
+                = InventoryReservation.builder()
                         .orderId(event.orderId())
                         .sourceEventId(event.eventId())
                         .resultEventId(UUID.randomUUID())
@@ -197,32 +331,55 @@ public class InventoryReservationService {
                         .totalAmount(null)
                         .build();
 
-        InventoryReservation savedReservation =
-                reservationRepository.save(reservation);
+        InventoryReservation savedReservation
+                = reservationRepository.save(reservation);
 
         markProcessed(event);
 
         return toResultEvent(savedReservation);
     }
 
-    private void markProcessed(OrderCreatedEvent event) {
-        ProcessedEvent processedEvent = ProcessedEvent.builder()
-                .eventId(event.eventId())
-                .eventType(event.eventType())
-                .orderId(event.orderId())
-                .processedAt(Instant.now())
-                .build();
+    private void markProcessed(
+            OrderCreatedEvent event) {
+
+        ProcessedEvent processedEvent
+                = ProcessedEvent.builder()
+                        .eventId(event.eventId())
+                        .eventType(event.eventType())
+                        .orderId(event.orderId())
+                        .processedAt(Instant.now())
+                        .build();
 
         processedEventRepository.save(processedEvent);
     }
 
-    private InventoryResultEvent loadExistingResult(Long orderId) {
-        InventoryReservation reservation =
-                reservationRepository.findByOrderId(orderId)
-                        .orElseThrow(() -> new IllegalStateException(
-                                "Processed event exists without "
-                                        + "an inventory reservation"
-                        ));
+    private void markCancellationProcessed(
+            OrderCancelledEvent event) {
+
+        ProcessedEvent processedEvent
+                = ProcessedEvent.builder()
+                        .eventId(event.eventId())
+                        .eventType(event.eventType())
+                        .orderId(event.orderId())
+                        .processedAt(Instant.now())
+                        .build();
+
+        processedEventRepository.save(processedEvent);
+    }
+
+    private InventoryResultEvent loadExistingResult(
+            Long orderId) {
+
+        InventoryReservation reservation
+                = reservationRepository.findByOrderId(
+                        orderId
+                ).orElseThrow(()
+                        -> new IllegalStateException(
+                                "Processed event exists "
+                                + "without an inventory "
+                                + "reservation"
+                        )
+                );
 
         return toResultEvent(reservation);
     }
@@ -230,19 +387,21 @@ public class InventoryReservationService {
     private InventoryResultEvent toResultEvent(
             InventoryReservation reservation) {
 
-        List<ReservedInventoryItem> items =
-                reservation.getItems()
+        List<ReservedInventoryItem> items
+                = reservation.getItems()
                         .stream()
-                        .map(item -> new ReservedInventoryItem(
+                        .map(item
+                                -> new ReservedInventoryItem(
                                 item.getProductId(),
                                 item.getProductName(),
                                 item.getQuantity(),
                                 item.getUnitPrice()
-                        ))
+                        )
+                        )
                         .toList();
 
-        InventoryResultStatus resultStatus =
-                InventoryResultStatus.valueOf(
+        InventoryResultStatus resultStatus
+                = InventoryResultStatus.valueOf(
                         reservation.getStatus().name()
                 );
 
@@ -261,7 +420,9 @@ public class InventoryReservationService {
         );
     }
 
-    private void validateEnvelope(OrderCreatedEvent event) {
+    private void validateEnvelope(
+            OrderCreatedEvent event) {
+
         if (event == null) {
             throw new InvalidOrderEventException(
                     "Order event is required"
@@ -274,25 +435,34 @@ public class InventoryReservationService {
             );
         }
 
-        if (!ORDER_CREATED_TYPE.equals(event.eventType())) {
+        if (!ORDER_CREATED_TYPE.equals(
+                event.eventType())) {
+
             throw new InvalidOrderEventException(
                     "Unsupported event type"
             );
         }
 
-        if (event.version() != SUPPORTED_EVENT_VERSION) {
+        if (event.version()
+                != SUPPORTED_EVENT_VERSION) {
+
             throw new InvalidOrderEventException(
-                    "Unsupported event version: " + event.version()
+                    "Unsupported event version: "
+                    + event.version()
             );
         }
 
-        if (event.orderId() == null || event.orderId() <= 0) {
+        if (event.orderId() == null
+                || event.orderId() <= 0) {
+
             throw new InvalidOrderEventException(
                     "A positive order ID is required"
             );
         }
 
-        if (event.userId() == null || event.userId() <= 0) {
+        if (event.userId() == null
+                || event.userId() <= 0) {
+
             throw new InvalidOrderEventException(
                     "A positive user ID is required"
             );
@@ -301,6 +471,61 @@ public class InventoryReservationService {
         if (event.occurredAt() == null) {
             throw new InvalidOrderEventException(
                     "Event timestamp is required"
+            );
+        }
+    }
+
+    private void validateCancellationEvent(
+            OrderCancelledEvent event) {
+
+        if (event == null) {
+            throw new InvalidOrderEventException(
+                    "Order cancellation event is required"
+            );
+        }
+
+        if (event.eventId() == null) {
+            throw new InvalidOrderEventException(
+                    "Cancellation event ID is required"
+            );
+        }
+
+        if (!ORDER_CANCELLED_TYPE.equals(
+                event.eventType())) {
+
+            throw new InvalidOrderEventException(
+                    "Unsupported cancellation event type"
+            );
+        }
+
+        if (event.version()
+                != SUPPORTED_EVENT_VERSION) {
+
+            throw new InvalidOrderEventException(
+                    "Unsupported cancellation event version: "
+                    + event.version()
+            );
+        }
+
+        if (event.orderId() == null
+                || event.orderId() <= 0) {
+
+            throw new InvalidOrderEventException(
+                    "A positive order ID is required"
+            );
+        }
+
+        if (event.userId() == null
+                || event.userId() <= 0) {
+
+            throw new InvalidOrderEventException(
+                    "A positive user ID is required"
+            );
+        }
+
+        if (event.occurredAt() == null) {
+            throw new InvalidOrderEventException(
+                    "Cancellation timestamp is required"
             );
         }
     }
@@ -340,7 +565,7 @@ public class InventoryReservationService {
             if (!productIds.add(item.productId())) {
                 return Optional.of(
                         "Duplicate product ID: "
-                                + item.productId()
+                        + item.productId()
                 );
             }
         }
@@ -351,6 +576,7 @@ public class InventoryReservationService {
     private record LockedProductRequest(
             Product product,
             int quantity
-    ) {
+            ) {
+
     }
 }

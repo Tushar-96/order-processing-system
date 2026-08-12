@@ -1,6 +1,8 @@
 package com.orderservice.service.impl;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
@@ -11,6 +13,8 @@ import com.orderservice.dto.request.OrderRequest;
 import com.orderservice.dto.response.OrderResponse;
 import com.orderservice.entity.Order;
 import com.orderservice.entity.OrderStatus;
+import com.orderservice.event.OrderCancelledApplicationEvent;
+import com.orderservice.event.OrderCancelledEvent;
 import com.orderservice.event.OrderCreatedApplicationEvent;
 import com.orderservice.event.OrderCreatedEvent;
 import com.orderservice.exception.OrderActionNotAllowedException;
@@ -74,8 +78,8 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public OrderResponse cancelOrder(
             Long userId,
-            Long orderId
-    ) {
+            Long orderId) {
+
         Order order = findOwnedOrder(userId, orderId);
 
         if (order.getStatus() == OrderStatus.CANCELLED) {
@@ -84,13 +88,22 @@ public class OrderServiceImpl implements OrderService {
             );
         }
 
+        if (order.getStatus() == OrderStatus.PENDING) {
+            throw new OrderActionNotAllowedException(
+                    "Order cannot be cancelled while inventory "
+                    + "verification is pending"
+            );
+        }
+
         if (order.getStatus()
                 == OrderStatus.INVENTORY_REJECTED) {
+
             throw new OrderActionNotAllowedException(
                     "Order was rejected by inventory"
                     + rejectionDetails(order)
             );
         }
+
         if (order.getStatus() == OrderStatus.SHIPPED) {
             throw new OrderActionNotAllowedException(
                     "A shipped order cannot be cancelled"
@@ -103,11 +116,31 @@ public class OrderServiceImpl implements OrderService {
             );
         }
 
+        if (order.getStatus() != OrderStatus.CONFIRMED) {
+            throw new OrderActionNotAllowedException(
+                    "Only a confirmed order can be cancelled"
+            );
+        }
+
         order.setStatus(OrderStatus.CANCELLED);
 
-        return OrderMapper.toResponse(
-                orderRepository.save(order)
+        Order savedOrder = orderRepository.save(order);
+
+        OrderCancelledEvent kafkaEvent
+                = new OrderCancelledEvent(
+                        UUID.randomUUID(),
+                        "OrderCancelled",
+                        1,
+                        savedOrder.getId(),
+                        savedOrder.getCustomerId(),
+                        Instant.now()
+                );
+
+        applicationEventPublisher.publishEvent(
+                new OrderCancelledApplicationEvent(kafkaEvent)
         );
+
+        return OrderMapper.toResponse(savedOrder);
     }
 
     private Order findOwnedOrder(

@@ -6,12 +6,28 @@ import {
   useState,
 } from "react";
 
-const CartContext = createContext(null);
-const CART_STORAGE_KEY = "shoppingCart";
+import { useAuth } from "../../context/AuthContext";
 
-function readStoredCart() {
+const CartContext = createContext(null);
+const LEGACY_CART_KEY = "shoppingCart";
+
+function getCartStorageKey(user) {
+  if (!user?.email) {
+    return null;
+  }
+
+  return `shoppingCart:${user.email
+    .trim()
+    .toLowerCase()}`;
+}
+
+function readStoredCart(storageKey) {
+  if (!storageKey) {
+    return [];
+  }
+
   try {
-    const storedCart = localStorage.getItem(CART_STORAGE_KEY);
+    const storedCart = localStorage.getItem(storageKey);
 
     if (!storedCart) {
       return [];
@@ -19,25 +35,76 @@ function readStoredCart() {
 
     const parsedCart = JSON.parse(storedCart);
 
-    return Array.isArray(parsedCart) ? parsedCart : [];
+    return Array.isArray(parsedCart)
+      ? parsedCart
+      : [];
   } catch {
-    localStorage.removeItem(CART_STORAGE_KEY);
+    localStorage.removeItem(storageKey);
     return [];
   }
 }
 
 export function CartProvider({ children }) {
-  const [cartItems, setCartItems] = useState(readStoredCart);
+  const { user } = useAuth();
 
+  const storageKey = useMemo(
+    () => getCartStorageKey(user),
+    [user?.email],
+  );
+
+  const [cartItems, setCartItems] = useState([]);
+  const [loadedStorageKey, setLoadedStorageKey] =
+    useState(null);
+
+  /*
+   * Load the correct cart whenever the authenticated
+   * user changes.
+   */
   useEffect(() => {
+    if (!storageKey) {
+      setCartItems([]);
+      setLoadedStorageKey(null);
+      return;
+    }
+
+    const storedCart = readStoredCart(storageKey);
+
+    setCartItems(storedCart);
+    setLoadedStorageKey(storageKey);
+  }, [storageKey]);
+
+  /*
+   * Save only after the cart belonging to the current
+   * user has finished loading.
+   *
+   * The loadedStorageKey check prevents User 1's cart
+   * from accidentally being written into User 2's key
+   * during account switching.
+   */
+  useEffect(() => {
+    if (
+      !storageKey ||
+      loadedStorageKey !== storageKey
+    ) {
+      return;
+    }
+
     localStorage.setItem(
-      CART_STORAGE_KEY,
+      storageKey,
       JSON.stringify(cartItems),
     );
-  }, [cartItems]);
+  }, [cartItems, storageKey, loadedStorageKey]);
+
+  /*
+   * Remove the old shared cart key because it does not
+   * belong to any specific account.
+   */
+  useEffect(() => {
+    localStorage.removeItem(LEGACY_CART_KEY);
+  }, []);
 
   function addToCart(product) {
-    if (product.availableQuantity <= 0) {
+    if (!storageKey || product.availableQuantity <= 0) {
       return false;
     }
 
@@ -72,7 +139,8 @@ export function CartProvider({ children }) {
           productId: product.id,
           name: product.name,
           price: Number(product.price),
-          availableQuantity: product.availableQuantity,
+          availableQuantity:
+            product.availableQuantity,
           quantity: 1,
         },
       ];
@@ -82,6 +150,10 @@ export function CartProvider({ children }) {
   }
 
   function updateQuantity(productId, quantity) {
+    if (!storageKey) {
+      return;
+    }
+
     setCartItems((currentItems) =>
       currentItems.map((item) => {
         if (item.productId !== productId) {
@@ -102,6 +174,10 @@ export function CartProvider({ children }) {
   }
 
   function removeFromCart(productId) {
+    if (!storageKey) {
+      return;
+    }
+
     setCartItems((currentItems) =>
       currentItems.filter(
         (item) => item.productId !== productId,

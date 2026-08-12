@@ -9,6 +9,7 @@ function CartItem({
   item,
   onUpdateQuantity,
   onRemove,
+  disabled = false,
 }) {
   function decreaseQuantity() {
     onUpdateQuantity(
@@ -49,7 +50,7 @@ function CartItem({
         <button
           type="button"
           aria-label={`Decrease ${item.name} quantity`}
-          disabled={item.quantity <= 1}
+          disabled={disabled || item.quantity <= 1}
           onClick={decreaseQuantity}
         >
           &minus;
@@ -63,6 +64,7 @@ function CartItem({
           type="button"
           aria-label={`Increase ${item.name} quantity`}
           disabled={
+            disabled ||
             item.quantity >= item.availableQuantity
           }
           onClick={increaseQuantity}
@@ -80,6 +82,7 @@ function CartItem({
       <button
         type="button"
         className="remove-button"
+        disabled={disabled}
         onClick={removeItem}
       >
         Remove
