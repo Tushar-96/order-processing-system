@@ -1,0 +1,63 @@
+spring:
+  application:
+    name: orderservice
+
+  datasource:
+    url: jdbc:postgresql://localhost:5434/order_db
+    username: postgres
+    password: order_password
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+    open-in-view: false
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+    producer:
+        key-serializer: org.apache.kafka.common.serialization.StringSerializer
+        value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+        properties:
+           spring.json.add.type.headers: false
+
+    consumer:
+        group-id: order-service
+        auto-offset-reset: earliest
+        enable-auto-commit: false
+        key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+        value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+        properties:
+          spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+          spring.json.value.default.type: com.orderservice.event.InventoryResultEvent
+          spring.json.trusted.packages: com.orderservice.event
+          spring.json.use.type.headers: false
+    listener:
+      ack-mode: record
+
+server:
+  port: 8082
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+application:
+  security:
+    jwt:
+      secret-key: ${JWT_SECRET}
+  
+  kafka:
+    topics:
+      order-created: order.created.v1
+      inventory-result: inventory.result.v1
+      order-cancelled: order.cancelled.v1

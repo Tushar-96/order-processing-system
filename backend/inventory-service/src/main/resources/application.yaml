@@ -1,0 +1,66 @@
+spring:
+  application:
+    name: inventory-service
+
+  docker:
+    compose:
+      enabled: false
+
+  datasource:
+    url: ${INVENTORY_DB_URL:jdbc:postgresql://localhost:5435/inventory_db}
+    username: ${INVENTORY_DB_USERNAME:postgres}
+    password: ${INVENTORY_DB_PASSWORD:inventory_password}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+    consumer:
+      group-id: inventory-service
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+        spring.json.value.default.type: com.ecommerce.inventory.event.OrderCreatedEvent
+        spring.json.trusted.packages: com.ecommerce.inventory.event
+        spring.json.use.type.headers: false
+
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+
+    listener:
+      ack-mode: record
+
+server:
+  port: 8083
+
+application:
+  seed:
+    products-enabled: ${SEED_PRODUCTS_ENABLED:true}
+
+  kafka:
+    topics:
+      order-created: order.created.v1
+      inventory-result: inventory.result.v1
+      order-created-dlt: order.created.v1.dlt
+      order-cancelled: order.cancelled.v1
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
