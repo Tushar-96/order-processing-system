@@ -1,6 +1,6 @@
 # Environment variables and secrets
 .env
-.env.
+.env.*
 !.env.example
 
 # Java and Maven
@@ -8,7 +8,7 @@ target
 .class
 .jar
 .war
-.log
+*.log
 
 # Node and frontend
 node_modules
