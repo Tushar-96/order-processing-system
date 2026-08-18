@@ -14,9 +14,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ecommerce.auth.dto.AuthResponse;
 import com.ecommerce.auth.dto.CurrentUserResponse;
+import com.ecommerce.auth.dto.ForgotPasswordRequest;
 import com.ecommerce.auth.dto.LoginRequest;
+import com.ecommerce.auth.dto.MessageResponse;
 import com.ecommerce.auth.dto.RegisterRequest;
+import com.ecommerce.auth.dto.ResetPasswordRequest;
 import com.ecommerce.auth.service.AuthService;
+import com.ecommerce.auth.service.PasswordResetService;
 
 import jakarta.validation.Valid;
 
@@ -25,9 +29,14 @@ import jakarta.validation.Valid;
 public class AuthController {
 
     private final AuthService authService;
+    private final PasswordResetService passwordResetService;
 
-    public AuthController(AuthService authService) {
+    public AuthController(
+            AuthService authService,
+            PasswordResetService passwordResetService) {
+
         this.authService = authService;
+        this.passwordResetService = passwordResetService;
     }
 
     @PostMapping("/register")
@@ -63,6 +72,39 @@ public class AuthController {
                 authentication.getName(),
                 authorities
         );
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<MessageResponse> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request) {
+
+        passwordResetService.requestPasswordReset(
+                request.email()
+        );
+
+        MessageResponse response
+                = new MessageResponse(
+                        "If an account exists for that email, "
+                        + "a password-reset link has been sent."
+                );
+
+        return ResponseEntity
+                .status(HttpStatus.ACCEPTED)
+                .body(response);
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<MessageResponse> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request) {
+
+        passwordResetService.resetPassword(request);
+
+        MessageResponse response
+                = new MessageResponse(
+                        "Your password has been reset successfully."
+                );
 
         return ResponseEntity.ok(response);
     }

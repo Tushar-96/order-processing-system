@@ -9,6 +9,8 @@ import AppLayout from "../layouts/AppLayout";
 import HomePage from "../pages/HomePage";
 import NotFoundPage from "../pages/NotFoundPage";
 import ProtectedRoute from "./ProtectedRoute";
+import ForgotPasswordPage from "../features/auth/ForgotPasswordPage";
+import ResetPasswordPage from "../features/auth/ResetPasswordPage";
 
 function AppRoutes() {
   return (
@@ -38,6 +40,16 @@ function AppRoutes() {
             element={<OrderHistoryPage />}
           />
         </Route>
+
+        <Route
+          path="/forgot-password"
+          element={<ForgotPasswordPage />}
+        />
+
+        <Route
+          path="/reset-password"
+          element={<ResetPasswordPage />}
+        />
 
         <Route path="*" element={<NotFoundPage />} />
       </Route>

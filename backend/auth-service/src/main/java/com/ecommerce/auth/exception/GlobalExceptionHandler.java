@@ -108,6 +108,39 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(InvalidPasswordResetTokenException.class)
+    public ResponseEntity<ApiError> handleInvalidResetToken(
+            InvalidPasswordResetTokenException exception,
+            HttpServletRequest request) {
+
+        return buildResponse(
+                HttpStatus.BAD_REQUEST,
+                "INVALID_PASSWORD_RESET_TOKEN",
+                exception.getMessage(),
+                request.getRequestURI(),
+                Map.of()
+        );
+    }
+
+    @ExceptionHandler(
+            PasswordConfirmationMismatchException.class
+    )
+    public ResponseEntity<ApiError> handlePasswordMismatch(
+            PasswordConfirmationMismatchException exception,
+            HttpServletRequest request) {
+
+        return buildResponse(
+                HttpStatus.BAD_REQUEST,
+                "PASSWORD_CONFIRMATION_MISMATCH",
+                exception.getMessage(),
+                request.getRequestURI(),
+                Map.of(
+                        "confirmPassword",
+                        exception.getMessage()
+                )
+        );
+    }
+
     private ResponseEntity<ApiError> buildResponse(
             HttpStatus status,
             String code,
