@@ -26,7 +26,14 @@ spring:
           auth: false
           starttls:
             enable: false
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
 
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+      properties:
+        spring.json.add.type.headers: false
 server:
   port: 8081
 
@@ -45,3 +52,7 @@ application:
     expiration-minutes: ${PASSWORD_RESET_EXPIRATION_MINUTES:15}
     frontend-url: ${FRONTEND_URL:http://localhost:5173}
     from-email: ${MAIL_FROM:no-reply@orderflow.local}
+  kafka:
+    topics:
+      user-security-version-changed: user.security-version.changed.v1
+  

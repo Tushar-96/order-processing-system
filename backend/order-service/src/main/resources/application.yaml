@@ -62,3 +62,5 @@ application:
       order-created: order.created.v1
       inventory-result: inventory.result.v1
       order-cancelled: order.cancelled.v1
+      user-security-version-changed:
+        user.security-version.changed.v1

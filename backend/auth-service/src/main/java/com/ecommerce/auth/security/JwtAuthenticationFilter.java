@@ -5,10 +5,12 @@ import java.io.IOException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+
+import com.ecommerce.auth.model.User;
+import com.ecommerce.auth.repository.UserRepository;
 
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -17,20 +19,24 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 @Component
-public class JwtAuthenticationFilter extends OncePerRequestFilter {
+public class JwtAuthenticationFilter
+        extends OncePerRequestFilter {
 
-    private static final String AUTHORIZATION_HEADER = "Authorization";
-    private static final String BEARER_PREFIX = "Bearer ";
+    private static final String AUTHORIZATION_HEADER
+            = "Authorization";
+
+    private static final String BEARER_PREFIX
+            = "Bearer ";
 
     private final JwtService jwtService;
-    private final UserDetailsService userDetailsService;
+    private final UserRepository userRepository;
 
     public JwtAuthenticationFilter(
             JwtService jwtService,
-            UserDetailsService userDetailsService) {
+            UserRepository userRepository) {
 
         this.jwtService = jwtService;
-        this.userDetailsService = userDetailsService;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -41,28 +47,57 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String authorizationHeader
-                = request.getHeader(AUTHORIZATION_HEADER);
+                = request.getHeader(
+                        AUTHORIZATION_HEADER
+                );
 
         if (authorizationHeader == null
-                || !authorizationHeader.startsWith(BEARER_PREFIX)) {
+                || !authorizationHeader.startsWith(
+                        BEARER_PREFIX
+                )) {
 
             filterChain.doFilter(request, response);
             return;
         }
 
-        String token = authorizationHeader.substring(BEARER_PREFIX.length());
+        String token
+                = authorizationHeader.substring(
+                        BEARER_PREFIX.length()
+                );
 
         try {
-            String email = jwtService.extractEmail(token);
+            String email
+                    = jwtService.extractEmail(token);
 
             if (email != null
-                    && SecurityContextHolder.getContext()
+                    && SecurityContextHolder
+                            .getContext()
                             .getAuthentication() == null) {
 
-                UserDetails userDetails
-                        = userDetailsService.loadUserByUsername(email);
+                User user
+                        = userRepository
+                                .findByEmailIgnoreCase(email)
+                                .orElse(null);
 
-                if (jwtService.isTokenValid(token, userDetails)) {
+                if (user != null
+                        && jwtService.isTokenValid(
+                                token,
+                                user
+                        )) {
+
+                    UserDetails userDetails
+                            = org.springframework.security.core.userdetails.User
+                                    .withUsername(
+                                            user.getEmail()
+                                    )
+                                    .password(
+                                            user.getPassword()
+                                    )
+                                    .authorities(
+                                            user.getRole().name()
+                                    )
+                                    .build();
+
                     UsernamePasswordAuthenticationToken authentication
                             = new UsernamePasswordAuthenticationToken(
                                     userDetails,
@@ -75,13 +110,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     .buildDetails(request)
                     );
 
-                    SecurityContextHolder.getContext()
-                            .setAuthentication(authentication);
+                    SecurityContextHolder
+                            .getContext()
+                            .setAuthentication(
+                                    authentication
+                            );
                 }
             }
-        } catch (JwtException | IllegalArgumentException exception) {
-            // Leave the request unauthenticated.
-            // Spring Security will reject protected endpoints.
+        } catch (JwtException
+                | IllegalArgumentException exception) {
+
+            SecurityContextHolder.clearContext();
         }
 
         filterChain.doFilter(request, response);

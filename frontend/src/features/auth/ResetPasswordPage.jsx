@@ -6,9 +6,11 @@ import {
 
 import { getApiError } from "../../utils/apiError";
 import { resetPassword } from "./passwordResetService";
+import { useAuth } from "../../context/AuthContext";
 import "./auth.css";
 
 function ResetPasswordPage() {
+  const { logout } = useAuth();
   const [searchParams] = useSearchParams();
 
   const token = searchParams.get("token") || "";
@@ -79,6 +81,7 @@ function ResetPasswordPage() {
         confirmPassword: formData.confirmPassword,
       });
 
+      logout();
       setSuccessMessage(response.message);
 
       setFormData({

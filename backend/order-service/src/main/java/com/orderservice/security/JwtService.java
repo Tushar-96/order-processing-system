@@ -30,4 +30,12 @@ public class JwtService {
                 .parseSignedClaims(token)
                 .getPayload();
     }
+
+    public Claims extractAllClaims(String token) {
+        return Jwts.parser()
+                .verifyWith(signingKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+    }
 }

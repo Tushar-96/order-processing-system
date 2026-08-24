@@ -58,6 +58,8 @@ application:
       inventory-result: inventory.result.v1
       order-created-dlt: order.created.v1.dlt
       order-cancelled: order.cancelled.v1
+      user-security-version-changed:
+        user.security-version.changed.v1
 
 management:
   endpoints:

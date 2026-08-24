@@ -4,13 +4,17 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ecommerce.auth.dto.ResetPasswordRequest;
+import com.ecommerce.auth.event.UserSecurityVersionChangedApplicationEvent;
+import com.ecommerce.auth.event.UserSecurityVersionChangedEvent;
 import com.ecommerce.auth.exception.InvalidPasswordResetTokenException;
 import com.ecommerce.auth.exception.PasswordConfirmationMismatchException;
 import com.ecommerce.auth.model.PasswordResetToken;
@@ -28,6 +32,7 @@ public class PasswordResetService {
     private final PasswordResetEmailService emailService;
     private final PasswordEncoder passwordEncoder;
     private final long expirationMinutes;
+    private final ApplicationEventPublisher eventPublisher;
 
     public PasswordResetService(
             UserRepository userRepository,
@@ -35,9 +40,11 @@ public class PasswordResetService {
             SecureTokenService secureTokenService,
             PasswordResetEmailService emailService,
             PasswordEncoder passwordEncoder,
+            ApplicationEventPublisher eventPublisher,
             @Value(
                     "${application.password-reset.expiration-minutes}"
-            ) long expirationMinutes) {
+            ) long expirationMinutes
+    ) {
 
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
@@ -45,6 +52,7 @@ public class PasswordResetService {
         this.emailService = emailService;
         this.passwordEncoder = passwordEncoder;
         this.expirationMinutes = expirationMinutes;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -148,10 +156,37 @@ public class PasswordResetService {
                 )
         );
 
+        user.setSecurityVersion(
+                user.getSecurityVersion() + 1
+        );
+
         resetToken.markUsed();
 
-        userRepository.save(user);
+        User savedUser
+                = userRepository.save(user);
+
         tokenRepository.save(resetToken);
+
+        tokenRepository.revokeActiveTokensForUser(
+                user.getId(),
+                Instant.now()
+        );
+
+        UserSecurityVersionChangedEvent securityEvent
+                = new UserSecurityVersionChangedEvent(
+                        UUID.randomUUID(),
+                        "UserSecurityVersionChanged",
+                        1,
+                        savedUser.getId(),
+                        savedUser.getSecurityVersion(),
+                        Instant.now()
+                );
+
+        eventPublisher.publishEvent(
+                new UserSecurityVersionChangedApplicationEvent(
+                        securityEvent
+                )
+        );
 
         /*
          * Revoke any other active reset links belonging
