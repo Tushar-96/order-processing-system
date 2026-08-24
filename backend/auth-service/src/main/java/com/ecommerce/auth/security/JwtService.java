@@ -7,7 +7,6 @@ import java.util.function.Function;
 import javax.crypto.SecretKey;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import com.ecommerce.auth.model.User;
@@ -35,12 +34,17 @@ public class JwtService {
 
     public String generateToken(User user) {
         Instant now = Instant.now();
-        Instant expiration = now.plusMillis(expirationMs);
+        Instant expiration
+                = now.plusMillis(expirationMs);
 
         return Jwts.builder()
                 .subject(user.getEmail())
                 .claim("userId", user.getId())
                 .claim("role", user.getRole().name())
+                .claim(
+                        "securityVersion",
+                        user.getSecurityVersion()
+                )
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiration))
                 .signWith(signingKey)
@@ -60,10 +64,17 @@ public class JwtService {
         return extractAllClaims(token).get("role", String.class);
     }
 
-    public boolean isTokenValid(String token, UserDetails user) {
-        String email = extractEmail(token);
+    public boolean isTokenValid(
+            String token,
+            User user) {
 
-        return email.equalsIgnoreCase(user.getUsername())
+        String email = extractEmail(token);
+        long tokenVersion
+                = extractSecurityVersion(token);
+
+        return email.equalsIgnoreCase(user.getEmail())
+                && tokenVersion
+                == user.getSecurityVersion()
                 && !isTokenExpired(token);
     }
 
@@ -93,5 +104,21 @@ public class JwtService {
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
+    }
+
+    public long extractSecurityVersion(String token) {
+        Number version
+                = extractAllClaims(token).get(
+                        "securityVersion",
+                        Number.class
+                );
+
+        /*
+     * Backward compatibility for tokens created before
+     * this feature was introduced.
+         */
+        return version == null
+                ? 0L
+                : version.longValue();
     }
 }

@@ -48,4 +48,16 @@ public class KafkaTopicConfig {
                 .replicas(1)
                 .build();
     }
+
+    @Bean
+    NewTopic userSecurityVersionChangedTopic(
+            @Value(
+                    "${application.kafka.topics.user-security-version-changed}"
+            ) String topicName) {
+
+        return TopicBuilder.name(topicName)
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
 }

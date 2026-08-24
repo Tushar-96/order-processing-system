@@ -51,6 +51,13 @@ public class User {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Column(
+            name = "security_version",
+            nullable = false
+    )
+    @Builder.Default
+    private long securityVersion = 0L;
+
     @PrePersist
     protected void onCreate() {
         Instant now = Instant.now();
